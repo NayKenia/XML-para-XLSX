@@ -1,0 +1,123 @@
+#Xlwt é uma API python de código aberto para escrever e formatar dados em formatos de arquivo Microsoft Excel mais antigos (97/2000/XP/2003 XLS)
+#!pip install xlwt
+#O Openpyxl é uma biblioteca Python de código aberto que permite manipular arquivos do Excel de forma programática
+#!pip install openpyxl
+
+import os
+import xml.etree.ElementTree as ET
+import pandas as pd
+from datetime import datetime
+from decimal import Decimal
+
+# Diretório contendo os arquivos XML
+diretorio = 'C:/Users/l2737.LIGA/OneDrive - LIGA/Pictures/Análise - CONVÊNIOS/Exportador - Acompanhamento DIGITeRECURSO/BRADESCO'
+
+def formatar_moeda(valor):
+    if valor is not None:
+        import locale
+        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+        
+        valor_formatado = locale.currency(valor, grouping=True, symbol=None)
+        
+        locale.setlocale(locale.LC_ALL, '')
+        
+        return valor_formatado
+    else:
+        return None
+
+# Lista para armazenar os dados de todos os arquivos
+dados_totais = []
+
+# Iterar sobre todos os arquivos no diretório
+for arquivo in os.listdir(diretorio):
+    if arquivo.endswith('.xml'):
+        caminho_arquivo = os.path.join(diretorio, arquivo)
+        
+        # Seu código existente para processar o arquivo XML
+        tree = ET.parse(caminho_arquivo)
+        root = tree.getroot()
+        dados = []
+
+        for demonstrativo_analise_conta in tree.findall(".//demonstrativoAnaliseConta"):
+            VALOR_PROTOCOLO = Decimal(demonstrativo_analise_conta.find('./valorInformadoGeral').text) if demonstrativo_analise_conta.find('./valorInformadoGeral') is not None else None
+            VALOR_PROTOCOLO_FORMATADO = formatar_moeda(VALOR_PROTOCOLO)
+            VALOR_GLOSA_PROTOCOLO = Decimal(demonstrativo_analise_conta.find('./valorGlosaGeral').text) if demonstrativo_analise_conta.find('./valorGlosaGeral') is not None else None
+            VALOR_GLOSA_PROTOCOLO_FORMATADO = formatar_moeda(VALOR_GLOSA_PROTOCOLO)
+            
+            for dados_conta in tree.findall(".//dadosConta"):
+                LOTE = dados_conta.find('./dadosProtocolo/numeroLotePrestador').text if dados_conta.find('./dadosProtocolo/numeroLotePrestador') is not None else None
+                NRO_LOTE = dados_conta.find('./dadosProtocolo/numeroProtocolo').text if dados_conta.find('./dadosProtocolo/numeroProtocolo') is not None else None
+                numero_protocolo = dados_conta.find('./dadosProtocolo/numeroProtocolo').text if dados_conta.find('./dadosProtocolo/numeroProtocolo') is not None else None
+                DATA_ENVIO_LOTE = dados_conta.find('./dadosProtocolo/dataProtocolo').text if dados_conta.find('./dadosProtocolo/dataProtocolo') is not None else None
+                if DATA_ENVIO_LOTE:
+                # Converter a string para um objeto datetime
+                    data_envio_lote_datetime = datetime.strptime(DATA_ENVIO_LOTE, '%Y-%m-%d')
+                # Formatando para o formato de data brasileiro
+                    DATA_ENVIO_LOTE = data_envio_lote_datetime.strftime('%d/%m/%Y')
+                    
+                for relacao_guias in dados_conta.findall('.//relacaoGuias'):
+                    NRO_GUIA_PRESTADOR = relacao_guias.find('./numeroGuiaPrestador').text if relacao_guias.find('./numeroGuiaPrestador') is not None else None
+                    NRO_GUIA_OPERADOR = relacao_guias.find('./numeroGuiaOperadora').text if relacao_guias.find('./numeroGuiaOperadora') is not None else None
+                    NOME_BENEFICIARIO = relacao_guias.find('./nomeBeneficiario').text if relacao_guias.find('./nomeBeneficiario') is not None else None
+           
+                    for detalhe_guia in relacao_guias.findall('.//detalhesGuia'):
+                        CODIGO_SERVIÇO = detalhe_guia.find('./procedimento/codigoProcedimento').text if detalhe_guia.find('./procedimento/codigoProcedimento') is not None else None
+                        DESCRIÇÃO = detalhe_guia.find('./procedimento/descricaoProcedimento').text if detalhe_guia.find('./procedimento/descricaoProcedimento') is not None else None
+                        QTD_EXECUTADA = Decimal(detalhe_guia.find('./qtdExecutada').text) if detalhe_guia.find('./qtdExecutada') is not None else None
+                        QTD_EXECUTADA_FORMATADO = formatar_moeda(QTD_EXECUTADA)
+                        VALOR_INFORMADO = Decimal(detalhe_guia.find('./valorInformado').text) if detalhe_guia.find('.valorInformado') is not None else None
+                        VALOR_INFORMADO_FORMATADO = formatar_moeda(VALOR_INFORMADO)
+                        VALOR_LIBERADO = Decimal(detalhe_guia.find('./valorLiberado').text) if detalhe_guia.find('./valorLiberado') is not None else None
+                        VALOR_LIBERADO_FORMATADO = formatar_moeda(VALOR_LIBERADO)
+                        COD_GLOSA_PROTOCOLO = detalhe_guia.find('./relacaoGlosa/tipoGlosa').text if detalhe_guia.find('./relacaoGlosa/tipoGlosa') is not None else None
+                        DATA_REALIZAÇÃO = detalhe_guia.find('./dataRealizacao').text if detalhe_guia.find('./dataRealizacao') is not None else None
+                        if DATA_REALIZAÇÃO:
+                            data_realização_datetime = datetime.strptime(DATA_REALIZAÇÃO, '%Y-%m-%d')
+                            DATA_REALIZAÇÃO = data_realização_datetime.strftime('%d/%m/%Y')
+                        
+                        CODIGO_TABELA = detalhe_guia.find('./procedimento/codigoTabela').text if detalhe_guia.find('./procedimento/codigoTabela') is not None else None
+                        VALOR_DA_GLOSA = Decimal(detalhe_guia.find('./relacaoGlosa/valorGlosa').text) if detalhe_guia.find('./relacaoGlosa/valorGlosa') is not None else None
+                        VALOR_DA_GLOSA_FORMATADO = formatar_moeda(VALOR_DA_GLOSA) 
+                       
+                        for epilogo_convenio in tree.findall(".//epilogo"):
+                            hash_conv = epilogo_convenio.find('./hash').text if epilogo_convenio.find('./hash') is not None else None
+                    
+                        dados.append({
+                        'FATURA': '',
+                        'LOTE': '',
+                        'DATA ENVIO LOTE': DATA_ENVIO_LOTE,
+                        'NUMERO PROTOCOLO': '0' + NRO_LOTE + '_' + LOTE + '_' + '000000000000000' + LOTE + '_' + hash_conv,
+                        'VALOR PROTOCOLO': VALOR_PROTOCOLO_FORMATADO,
+                        'VALOR GLOSA PROTOCOLO': VALOR_GLOSA_PROTOCOLO_FORMATADO,
+                        'COD GLOSA PROTOCOLO': COD_GLOSA_PROTOCOLO,
+                        'NRO GUIA PRESTADOR': NRO_GUIA_PRESTADOR,
+                        'NRO GUIA OPERADORA': NRO_GUIA_OPERADOR,
+                        'NRO BENEFICIÁRIO': '',
+                        'BENEFICIÁRIO': NOME_BENEFICIARIO,
+                        'DATA REALIZAÇÃO': DATA_REALIZAÇÃO,
+                        'CODIGO TABELA': CODIGO_TABELA,
+                        'CODIGO SERVIÇO': CODIGO_SERVIÇO,
+                        'DESCRIÇÃO': DESCRIÇÃO,
+                        'COD. PRESTADOR SOLICITANTE': '',
+                        'NOME PRESTADOR SOLICITANTE': '',
+                        'GRAU PART.': '',
+                        'QTD EXECUTADA': QTD_EXECUTADA_FORMATADO,
+                        'VALOR INFORMADO': VALOR_INFORMADO_FORMATADO,
+                        'VALOR LIBERADO': VALOR_LIBERADO_FORMATADO,
+                        'VALOR DA GLOSA': VALOR_DA_GLOSA_FORMATADO,
+                        'CODIGO DA GLOSA': COD_GLOSA_PROTOCOLO,
+                        'DESCR. DA GLOSA': '',
+                        'CODIGO DA GLOSA AMIL': '',
+                        'DESCRIÇÃO DA GLOSA AMIL': '',
+                        'RESPOSTA': '',
+                        'GNC': 'NÃO',
+                        'CONSENSO': 'NÃO'                   
+                        })
+
+        dados_totais.extend(dados)
+
+df = pd.DataFrame(dados_totais)
+
+print(df)
+
+df.to_excel('C:/Users/l2737.LIGA/OneDrive - LIGA/Pictures/Análise - CONVÊNIOS/Exportador - Acompanhamento DIGITeRECURSO/BRADESCO/BRADESCO.xlsx', index=False)
