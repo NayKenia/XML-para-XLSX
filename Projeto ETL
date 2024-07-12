@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 
 # Diretório contendo os arquivos XML
-diretorio = 'C:/Users/l2737.LIGA/OneDrive - LIGA/Pictures/Análise - CONVÊNIOS/Exportador - Acompanhamento DIGITeRECURSO/BRADESCO'
+diretorio = 'C:/'
 
 def formatar_moeda(valor):
     if valor is not None:
@@ -114,10 +114,8 @@ for arquivo in os.listdir(diretorio):
                         'CONSENSO': 'NÃO'                   
                         })
 
-        dados_totais.extend(dados)
+        dados_totais.extend(dados)  
 
 df = pd.DataFrame(dados_totais)
 
-print(df)
-
-df.to_excel('C:/Users/l2737.LIGA/OneDrive - LIGA/Pictures/Análise - CONVÊNIOS/Exportador - Acompanhamento DIGITeRECURSO/BRADESCO/BRADESCO.xlsx', index=False)
+df.to_excel('C:/.xlsx', index=False)
